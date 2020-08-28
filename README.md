@@ -1,5 +1,5 @@
 # Current Version 1.0
-https://github.com/Russell-KV4S/IRLP.StationTracking/releases/download/v1.1/IRLP.StationTracking.zip
+https://github.com/Russell-KV4S/IRLP.RefConnMon/releases/download/1.0/IRLP.RefConnMon.zip
 
 # IRLP.RefConnMon
 IRLP.RefConnMon gives you ability to get email notifications about station connections of your favorite IRLP reflectors.
