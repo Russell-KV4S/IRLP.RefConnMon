@@ -2,7 +2,7 @@
 https://github.com/Russell-KV4S/IRLP.RefConnMon/releases/download/1.0/IRLP.RefConnMon.zip
 
 # IRLP.RefConnMon
-IRLP.RefConnMon gives you ability to get email notifications about station connections of your favorite IRLP reflectors.
+IRLP.RefConnMon gives you ability to get email notifications about station connections to your favorite IRLP reflectors.
 The program reads data from this site: http://status.irlp.net/index.php?PSTART=9
 
 Contact me if you have feature request or use Git and create your enhancements and merge them back in.
