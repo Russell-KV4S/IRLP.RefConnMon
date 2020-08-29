@@ -106,7 +106,8 @@ namespace KV4S.AmateurRadio.IRLP.RefConnMon
                                     string[] strFieldSplit = s.Split(strItemSplit, StringSplitOptions.RemoveEmptyEntries);
                                     Node node = new Node();
                                     node.Number = strFieldSplit[0];
-                                    node.ConnectedReflector = strFieldSplit[1];
+                                    node.Callsign = strFieldSplit[1];
+                                    node.ConnectedReflector = strFieldSplit[2];
                                     NodesOnDisk.Add(node);
                                 }
                             }
