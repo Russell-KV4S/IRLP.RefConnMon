@@ -127,7 +127,7 @@ namespace KV4S.AmateurRadio.IRLP.RefConnMon
                                 {
                                     SomethingChanged = true;
                                     NodesOnDisk.Add(webNode);
-                                    Email(webNode.Callsign + " node number " + webNode.Number + " has connected to reflector " + webNode.ConnectedReflector + ".");
+                                    Email(webNode.Callsign + " (" + webNode.Number + ") has connected to " + webNode.ConnectedReflector + ".");
                                 }
                             }
 
@@ -146,7 +146,7 @@ namespace KV4S.AmateurRadio.IRLP.RefConnMon
                                 {
                                     SomethingChanged = true;
                                     NodesOnDisk.Remove(diskNode);
-                                    Email(diskNode.Callsign + " node number " + diskNode.Number + " has disconnected from reflector " + diskNode.ConnectedReflector + ".");
+                                    Email(diskNode.Callsign + " (" + diskNode.Number + ") has disconnected from " + diskNode.ConnectedReflector + ".");
                                 }
                             }
 
