@@ -62,123 +62,134 @@ namespace KV4S.AmateurRadio.IRLP.RefConnMon
                     ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
                     var irlpHTML = wc.DownloadString(URL);
 
-                    ReflectorListString = ConfigurationManager.AppSettings["Reflectors"].ToUpper();
-                    foreach (string reflector in _reflectorList)
+                    if (irlpHTML.Contains("9050")) //seeing if the html includes the largest reflector. sometimes the data isn't loaded when the html is loaded.
                     {
-                        Console.WriteLine("Looking for connections to " + reflector);
-                        string[] strBeginSplit = new string[] { "<tr><td>" };
-                        string[] strRowSplit = irlpHTML.Split(strBeginSplit, StringSplitOptions.RemoveEmptyEntries);
-
-                        int i = 1;
-                        foreach (var item in strRowSplit)
+                        ReflectorListString = ConfigurationManager.AppSettings["Reflectors"].ToUpper();
+                        foreach (string reflector in _reflectorList)
                         {
-                            if (i>3)
-                            {
-                                string[] strItemSplit = new string[] { "</td><td>", "</td></tr>" };
-                                string[] strFieldSplit = item.Split(strItemSplit, StringSplitOptions.RemoveEmptyEntries);
+                            Console.WriteLine("Looking for connections to " + reflector);
+                            string[] strBeginSplit = new string[] { "<tr><td>" };
+                            string[] strRowSplit = irlpHTML.Split(strBeginSplit, StringSplitOptions.RemoveEmptyEntries);
 
-                                if (strFieldSplit[strFieldSplit.Length -1].ToString().Trim() == reflector)
-                                {
-                                    Node node = new Node();
-                                    node.Callsign = strFieldSplit[1].ToString().Trim();
-                                    node.Number = strFieldSplit[0].Substring(strFieldSplit[0].IndexOf(">") + 1, 
-                                                  strFieldSplit[0].Length - strFieldSplit[0].LastIndexOf("<"));
-                                    node.ConnectedReflector = strFieldSplit[strFieldSplit.Length-1].ToString().Trim();
-                                    NodesOnWeb.Add(node);
-                                    Console.WriteLine("     " + node.Callsign + " node number " + node.Number + " is connected to reflector " + node.ConnectedReflector + ".");
-                                }
-                            }
-                            i++;
-                        }
-
-                        bool SomethingChanged = false;
-                        if (File.Exists(reflector + ".txt"))
-                        {
-                            //Load Node object from disk.
-                            string readContents;
-                            using (StreamReader sr = File.OpenText(reflector + ".txt"))
+                            int i = 1;
+                            foreach (var item in strRowSplit)
                             {
-                                bool found = false;
-                                String s = "";
-                                while ((s = sr.ReadLine()) != null)
+                                if (i > 3)
                                 {
-                                    string[] strItemSplit = new string[] { "," };
-                                    string[] strFieldSplit = s.Split(strItemSplit, StringSplitOptions.RemoveEmptyEntries);
-                                    Node node = new Node();
-                                    node.Number = strFieldSplit[0];
-                                    node.Callsign = strFieldSplit[1];
-                                    node.ConnectedReflector = strFieldSplit[2];
-                                    NodesOnDisk.Add(node);
-                                }
-                            }
+                                    string[] strItemSplit = new string[] { "</td><td>", "</td></tr>" };
+                                    string[] strFieldSplit = item.Split(strItemSplit, StringSplitOptions.RemoveEmptyEntries);
 
-                            //Compare web to disk and add missing as these represent new connections
-                            foreach (var webNode in NodesOnWeb)
-                            {
-                                bool found = false;
-                                foreach (var diskNode in NodesOnDisk)
-                                {
-                                    if (webNode.Number == diskNode.Number)
+                                    if (strFieldSplit[strFieldSplit.Length - 1].ToString().Trim() == reflector)
                                     {
-                                        found = true;
+                                        Node node = new Node();
+                                        node.Callsign = strFieldSplit[1].ToString().Trim();
+                                        node.Number = strFieldSplit[0].Substring(strFieldSplit[0].IndexOf(">") + 1,
+                                                      strFieldSplit[0].Length - strFieldSplit[0].LastIndexOf("<"));
+                                        node.ConnectedReflector = strFieldSplit[strFieldSplit.Length - 1].ToString().Trim();
+                                        NodesOnWeb.Add(node);
+                                        Console.WriteLine("     " + node.Callsign + " node number " + node.Number + " is connected to reflector " + node.ConnectedReflector + ".");
                                     }
                                 }
-                                if (!found)
-                                {
-                                    SomethingChanged = true;
-                                    NodesOnDisk.Add(webNode);
-                                    Email(webNode.Callsign + " (" + webNode.Number + ") has connected to " + webNode.ConnectedReflector + ".");
-                                }
+                                i++;
                             }
 
-                            //compare disk to web and remove missing as these repesent disconnections
-                            foreach (var diskNode in NodesOnDisk.ToList())
+                            bool SomethingChanged = false;
+                            if (File.Exists(reflector + ".txt"))
                             {
-                                bool found = false;
+                                //Load Node object from disk.
+                                string readContents;
+                                using (StreamReader sr = File.OpenText(reflector + ".txt"))
+                                {
+                                    bool found = false;
+                                    String s = "";
+                                    while ((s = sr.ReadLine()) != null)
+                                    {
+                                        string[] strItemSplit = new string[] { "," };
+                                        string[] strFieldSplit = s.Split(strItemSplit, StringSplitOptions.RemoveEmptyEntries);
+                                        Node node = new Node();
+                                        node.Number = strFieldSplit[0];
+                                        node.Callsign = strFieldSplit[1];
+                                        node.ConnectedReflector = strFieldSplit[2];
+                                        NodesOnDisk.Add(node);
+                                    }
+                                }
+
+                                //Compare web to disk and add missing as these represent new connections
                                 foreach (var webNode in NodesOnWeb)
                                 {
-                                    if (diskNode.Number == webNode.Number)
+                                    bool found = false;
+                                    foreach (var diskNode in NodesOnDisk)
                                     {
-                                        found = true;
+                                        if (webNode.Number == diskNode.Number)
+                                        {
+                                            found = true;
+                                        }
+                                    }
+                                    if (!found)
+                                    {
+                                        SomethingChanged = true;
+                                        NodesOnDisk.Add(webNode);
+                                        Email(webNode.Callsign + " (" + webNode.Number + ") has connected to " + webNode.ConnectedReflector + ".");
                                     }
                                 }
-                                if (!found)
+
+                                //compare disk to web and remove missing as these repesent disconnections
+                                foreach (var diskNode in NodesOnDisk.ToList())
                                 {
-                                    SomethingChanged = true;
-                                    NodesOnDisk.Remove(diskNode);
-                                    Email(diskNode.Callsign + " (" + diskNode.Number + ") has disconnected from " + diskNode.ConnectedReflector + ".");
+                                    bool found = false;
+                                    foreach (var webNode in NodesOnWeb)
+                                    {
+                                        if (diskNode.Number == webNode.Number)
+                                        {
+                                            found = true;
+                                        }
+                                    }
+                                    if (!found)
+                                    {
+                                        SomethingChanged = true;
+                                        NodesOnDisk.Remove(diskNode);
+                                        Email(diskNode.Callsign + " (" + diskNode.Number + ") has disconnected from " + diskNode.ConnectedReflector + ".");
+                                    }
+                                }
+
+                                //delete and rewrite the new nodes on disk list.
+                                if (SomethingChanged)
+                                {
+                                    File.Delete(reflector + ".txt");
+                                    FileStream fs = null;
+                                    fs = new FileStream(reflector + ".txt", FileMode.Append);
+                                    StreamWriter log = new StreamWriter(fs);
+                                    foreach (var node in NodesOnDisk)
+                                    {
+                                        log.WriteLine(node.Number + "," + node.Callsign + "," + node.ConnectedReflector);
+                                    }
+                                    log.Close();
+                                    fs.Close();
+
+                                    //debugging/testing only - adding code to write html to file to try to figure out if malformed html is reporting as a disconnect false positive.
+                                    //FileStream fs1 = null;
+                                    //fs1 = new FileStream("irlpHTML_" + DateTime.Now.ToString("HH_mm_ss") + ".txt", FileMode.Append);
+                                    //StreamWriter html = new StreamWriter(fs1);
+                                    //html.WriteLine(irlpHTML.ToString());
+                                    //html.Close();
+                                    //fs1.Close();
                                 }
                             }
-
-                            //delete and rewrite the new nodes on disk list.
-                            if (SomethingChanged)
+                            else
                             {
-                                File.Delete(reflector + ".txt");
                                 FileStream fs = null;
                                 fs = new FileStream(reflector + ".txt", FileMode.Append);
                                 StreamWriter log = new StreamWriter(fs);
-                                foreach (var node in NodesOnDisk)
+                                foreach (var node in NodesOnWeb)
                                 {
                                     log.WriteLine(node.Number + "," + node.Callsign + "," + node.ConnectedReflector);
                                 }
                                 log.Close();
                                 fs.Close();
                             }
+                            NodesOnWeb.Clear();
+                            NodesOnDisk.Clear();
                         }
-                        else
-                        {
-                            FileStream fs = null;
-                            fs = new FileStream(reflector + ".txt", FileMode.Append);
-                            StreamWriter log = new StreamWriter(fs);
-                            foreach (var node in NodesOnWeb)
-                            {
-                                log.WriteLine(node.Number + "," + node.Callsign + "," + node.ConnectedReflector);
-                            }
-                            log.Close();
-                            fs.Close();
-                        }
-                        NodesOnWeb.Clear();
-                        NodesOnDisk.Clear();
                     }
                 }
                 Console.WriteLine("Reflector Monitoring Complete!");
