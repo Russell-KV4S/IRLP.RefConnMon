@@ -62,7 +62,8 @@ namespace KV4S.AmateurRadio.IRLP.RefConnMon
                     ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
                     var irlpHTML = wc.DownloadString(URL);
 
-                    if (irlpHTML.Contains("9050")) //seeing if the html includes the largest reflector. sometimes the data isn't loaded when the html is loaded.
+                    if (irlpHTML.Contains("9050") &&        //seeing if the html includes the largest reflector. sometimes the data isn't loaded when the html is loaded.
+                        irlpHTML.Contains("<hr><center>"))  //when writing html file out to disk saw bad symbols or blank spaces on some downloads and represents a bad download.
                     {
                         ReflectorListString = ConfigurationManager.AppSettings["Reflectors"].ToUpper();
                         foreach (string reflector in _reflectorList)
@@ -97,10 +98,8 @@ namespace KV4S.AmateurRadio.IRLP.RefConnMon
                             if (File.Exists(reflector + ".txt"))
                             {
                                 //Load Node object from disk.
-                                string readContents;
                                 using (StreamReader sr = File.OpenText(reflector + ".txt"))
                                 {
-                                    bool found = false;
                                     String s = "";
                                     while ((s = sr.ReadLine()) != null)
                                     {
@@ -289,7 +288,7 @@ namespace KV4S.AmateurRadio.IRLP.RefConnMon
                 log.Close();
                 fs.Close();
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 Console.WriteLine("Error logging previous error.");
                 Console.WriteLine("Make sure the Error log is not open.");
