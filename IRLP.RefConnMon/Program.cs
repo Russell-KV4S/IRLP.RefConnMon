@@ -5,8 +5,8 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Mail;
-using System.Text;
-using System.Threading.Tasks;
+using System.Threading;
+using Telegram.Bot;
 
 namespace KV4S.AmateurRadio.IRLP.RefConnMon
 {
@@ -15,6 +15,13 @@ namespace KV4S.AmateurRadio.IRLP.RefConnMon
         public static string URL = "http://status.irlp.net/index.php?PSTART=9";
 
         //load from App.config
+
+        //telegram
+        public static TelegramBotClient bot = new TelegramBotClient(ConfigurationManager.AppSettings["BotToken"]);
+        public static string destinationID = ConfigurationManager.AppSettings["DestinationID"];
+        public static int intSleepTime = 2000;
+
+        //email
         public static MailAddress from = new MailAddress(ConfigurationManager.AppSettings["EmailFrom"]);
         public static string toConfig = ConfigurationManager.AppSettings["EmailTo"];
         public static string smtpHost = ConfigurationManager.AppSettings["SMTPHost"];
@@ -128,7 +135,16 @@ namespace KV4S.AmateurRadio.IRLP.RefConnMon
                                     {
                                         SomethingChanged = true;
                                         NodesOnDisk.Add(webNode);
-                                        Email(webNode.Callsign + " (" + webNode.Number + ") has connected to " + webNode.ConnectedReflector + ".");
+                                        if (ConfigurationManager.AppSettings["StatusEmails"] == "Y")
+                                        {
+                                            Email(webNode.Callsign + " (" + webNode.Number + ") has connected to " + webNode.ConnectedReflector + ".");
+                                        }
+                                        if (ConfigurationManager.AppSettings["TelegramStatus"] == "Y")
+                                        {
+                                            bot.SendTextMessageAsync(destinationID, "IRLP Reflector Connnection Monitor - " +
+                                                webNode.Callsign + " (" + webNode.Number + ") has connected to " + webNode.ConnectedReflector + ".");
+                                            Thread.Sleep(intSleepTime);
+                                        }
                                     }
                                 }
 
@@ -147,7 +163,16 @@ namespace KV4S.AmateurRadio.IRLP.RefConnMon
                                     {
                                         SomethingChanged = true;
                                         NodesOnDisk.Remove(diskNode);
-                                        Email(diskNode.Callsign + " (" + diskNode.Number + ") has disconnected from " + diskNode.ConnectedReflector + ".");
+                                        if (ConfigurationManager.AppSettings["StatusEmails"] == "Y")
+                                        {
+                                            Email(diskNode.Callsign + " (" + diskNode.Number + ") has disconnected from " + diskNode.ConnectedReflector + ".");
+                                        }
+                                        if (ConfigurationManager.AppSettings["TelegramStatus"] == "Y")
+                                        {
+                                            bot.SendTextMessageAsync(destinationID, "IRLP Reflector Connnection Monitor - " +
+                                                diskNode.Callsign + " (" + diskNode.Number + ") has disconnected from " + diskNode.ConnectedReflector + ".");
+                                            Thread.Sleep(intSleepTime);
+                                        }
                                     }
                                 }
 
@@ -201,6 +226,11 @@ namespace KV4S.AmateurRadio.IRLP.RefConnMon
                 if (ConfigurationManager.AppSettings["EmailError"] == "Y")
                 {
                     EmailError(ex.Message, ex.Source);
+                }
+                if (ConfigurationManager.AppSettings["TelegramError"] == "Y")
+                {
+                    bot.SendTextMessageAsync(destinationID, "IRLP.RefConnMon Error - Message: " + ex.Message + " Source: " + ex.Source);
+                    Thread.Sleep(intSleepTime);
                 }
             }
             finally
