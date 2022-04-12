@@ -1,8 +1,10 @@
-# Current Version 1.1
-https://github.com/Russell-KV4S/IRLP.RefConnMon/releases/download/1.1/IRLP.RefConnMon.zip
+# Current Version 1.2
+https://github.com/Russell-KV4S/IRLP.RefConnMon/releases/download/v1.2/IRLP.RefConnMon.zip
+
+Runs on .Net Framework 4.8 install here: https://dotnet.microsoft.com/en-us/download/dotnet-framework/net48
 
 # IRLP.RefConnMon
-IRLP.RefConnMon gives you ability to get email notifications about station connections to your favorite IRLP reflectors.
+IRLP.RefConnMon gives you ability to get Email and/or Telegram notifications about station connections to your favorite IRLP reflectors.
 The program reads data from this site: http://status.irlp.net/index.php?PSTART=9
 
 Contact me if you have feature request or use Git and create your enhancements and merge them back in.
@@ -25,6 +27,12 @@ There are comments in the file that tells you how to format the entries. Here is
         <add key="Unattended" value="N"/>
         <add key="EmailError" value="Y"/>
         <add key="StatusEmails" value="Y"/>
+        <add key="TelegramError" value="Y"/>
+	    <add key="TelegramStatus" value="Y"/>
+
+	    <!--Telegram Parameters-->
+	    <add key="BotToken" value="12345"/>
+	    <add key="DestinationID" value="1234"/>
       
       <!--Email Parameters - Gmail example-->
       <!--use commas with no spaces to add more emails to the email To and From field-->
@@ -38,4 +46,6 @@ There are comments in the file that tells you how to format the entries. Here is
 </configuration>
 
 ```
+For Telegram setup see the wiki article:
+
 Errors will be logged to an ErrorLog.txt 
