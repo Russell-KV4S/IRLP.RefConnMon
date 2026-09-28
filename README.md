@@ -29,6 +29,8 @@ I recommend using Windows Task Scheduler (or cron on Linux) to kick the program 
 
 To build from source: `dotnet publish IRLP.RefConnMon -c Release`
 
+To publish a release: push a version tag (for example `git tag v1.4 && git push origin v1.4`). The Release workflow (`.github/workflows/release.yml`) builds a zip for every platform above and attaches them to the GitHub release for that tag. To build the same zips locally, run `packaging/build-release.sh` (they land in `artifacts/`).
+
 Once you download, edit the `IRLP.RefConnMon.dll.config` file that's along side the executable as needed (you won't need to copy the config on future releases unless there is a structure change). 
 There are comments in the file that tells you how to format the entries. Here is the example file:
 ```
