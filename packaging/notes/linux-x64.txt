@@ -9,5 +9,5 @@ If ./IRLP.RefConnMon is not executable after unzipping:  chmod +x IRLP.RefConnMo
 Set Unattended to Y in IRLP.RefConnMon.dll.config and schedule it with cron, e.g. every 2 minutes:
 */2 * * * * cd /path/to/IRLP.RefConnMon && ./IRLP.RefConnMon
 
-Upgrading from 1.2 or earlier: the settings file is now named IRLP.RefConnMon.dll.config instead of IRLP.RefConnMon.exe.config.
+Upgrading from 1.x: the settings file is now named IRLP.RefConnMon.dll.config instead of IRLP.RefConnMon.exe.config.
 Copy your values into the new file (the keys are unchanged). Your existing reflector .txt files still work.

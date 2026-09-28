@@ -2,7 +2,7 @@
 # Builds the release zips for every supported platform into ./artifacts.
 #
 #   packaging/build-release.sh           # version from IRLP.RefConnMon.csproj
-#   packaging/build-release.sh 1.4.0     # override the version (the release workflow passes the tag)
+#   packaging/build-release.sh 2.1.0     # override the version (the release workflow passes the tag)
 #
 # Needs the .NET 10 SDK and zip. Every platform can be built from any OS.
 set -euo pipefail
