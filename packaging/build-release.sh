@@ -13,14 +13,20 @@ OUT="artifacts"
 NOTE="Do Not copy the config file if you already set one up.txt"
 
 # Runtime identifiers to build. win-x64 keeps the historic IRLP.RefConnMon.zip name so existing links keep working.
-RIDS=(win-x64 win-arm64 linux-x64 linux-musl-x64 linux-arm64 linux-musl-arm64 linux-arm osx-x64 osx-arm64)
+# "any" is a portable build with no native launcher that runs anywhere .NET 10 does (dotnet IRLP.RefConnMon.dll).
+RIDS=(win-x64 linux-x64 linux-arm64 linux-arm any)
 
 rm -rf "$OUT"
 mkdir -p "$OUT"
 
 for rid in "${RIDS[@]}"; do
     stage="$OUT/stage/$rid"
-    args=(-c Release -r "$rid" --self-contained false -p:DebugType=None -o "$stage")
+    args=(-c Release --self-contained false -p:DebugType=None -o "$stage")
+    if [[ "$rid" == "any" ]]; then
+        args+=(-p:UseAppHost=false)
+    else
+        args+=(-r "$rid")
+    fi
     if [[ -n "$VERSION" ]]; then
         args+=(-p:Version="$VERSION")
     fi
@@ -37,7 +43,7 @@ for rid in "${RIDS[@]}"; do
     else
         zipname="IRLP.RefConnMon-$rid.zip"
     fi
-    (cd "$stage" && zip -q -X "../../$zipname" ./*)
+    (cd "$stage" && zip -q -X -r "../../$zipname" ./*)
 done
 
 rm -rf "$OUT/stage"

@@ -1,21 +1,13 @@
 # Current Version 1.3
 Windows (x64): https://github.com/Russell-KV4S/IRLP.RefConnMon/releases/latest/download/IRLP.RefConnMon.zip
 
-Windows ARM64 (e.g. Snapdragon / Surface Pro X): https://github.com/Russell-KV4S/IRLP.RefConnMon/releases/latest/download/IRLP.RefConnMon-win-arm64.zip
-
-Linux ARM64 (e.g. Raspberry Pi 3/4/5 on a 64-bit OS): https://github.com/Russell-KV4S/IRLP.RefConnMon/releases/latest/download/IRLP.RefConnMon-linux-arm64.zip
-
-Linux musl ARM64 (Alpine Linux on ARM64 boards and Alpine-based Docker images; if `ldd --version` mentions musl, use this one): https://github.com/Russell-KV4S/IRLP.RefConnMon/releases/latest/download/IRLP.RefConnMon-linux-musl-arm64.zip
+Linux x64 (64-bit x86 PCs and servers): https://github.com/Russell-KV4S/IRLP.RefConnMon/releases/latest/download/IRLP.RefConnMon-linux-x64.zip
 
 Linux ARM 32-bit (e.g. Raspberry Pi 2/3/4/5 on a 32-bit OS; run `uname -m`: `armv7l` = this one, `aarch64` = ARM64): https://github.com/Russell-KV4S/IRLP.RefConnMon/releases/latest/download/IRLP.RefConnMon-linux-arm.zip
 
-Linux x64 (64-bit x86 PCs and servers): https://github.com/Russell-KV4S/IRLP.RefConnMon/releases/latest/download/IRLP.RefConnMon-linux-x64.zip
+Linux ARM64 (e.g. Raspberry Pi 3/4/5 on a 64-bit OS): https://github.com/Russell-KV4S/IRLP.RefConnMon/releases/latest/download/IRLP.RefConnMon-linux-arm64.zip
 
-Linux musl x64 (Alpine Linux and Alpine-based Docker images; if `ldd --version` mentions musl, use this one): https://github.com/Russell-KV4S/IRLP.RefConnMon/releases/latest/download/IRLP.RefConnMon-linux-musl-x64.zip
-
-macOS ARM64 (Apple Silicon M1 and later): https://github.com/Russell-KV4S/IRLP.RefConnMon/releases/latest/download/IRLP.RefConnMon-osx-arm64.zip (after unzipping, run `xattr -dr com.apple.quarantine .` in the folder so macOS allows it to run)
-
-macOS x64 (Intel Macs): https://github.com/Russell-KV4S/IRLP.RefConnMon/releases/latest/download/IRLP.RefConnMon-osx-x64.zip (same `xattr` step as above after unzipping)
+Any platform (Windows on ARM, macOS, Alpine, and anything else .NET 10 runs on; start it with `dotnet IRLP.RefConnMon.dll`): https://github.com/Russell-KV4S/IRLP.RefConnMon/releases/latest/download/IRLP.RefConnMon-any.zip
 
 Runs on .NET 10 (Windows, Linux, or macOS). Install the .NET 10 Runtime here: https://dotnet.microsoft.com/en-us/download/dotnet/10.0
 
