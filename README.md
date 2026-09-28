@@ -1,5 +1,5 @@
-# Current Version 1.2
-https://github.com/Russell-KV4S/IRLP.RefConnMon/releases/download/v1.2/IRLP.RefConnMon.zip
+# Current Version 1.3
+https://github.com/Russell-KV4S/IRLP.RefConnMon/releases/download/v1.3/IRLP.RefConnMon.zip
 
 Runs on .NET 10 (Windows, Linux, or macOS). Install the .NET 10 Runtime here: https://dotnet.microsoft.com/en-us/download/dotnet/10.0
 
