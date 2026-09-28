@@ -259,19 +259,29 @@ namespace KV4S.AmateurRadio.IRLP.RefConnMon
             }
         }
 
+        //Any setting can come from an environment variable named IRLP_REFCONNMON_<KEY> (e.g. IRLP_REFCONNMON_SMTPPASSWORD),
+        //which wins over the .config file. Use this to keep passwords and tokens out of the config file.
+        const string EnvPrefix = "IRLP_REFCONNMON_";
+
+        static string? RawSetting(string key)
+        {
+            string? fromEnv = Environment.GetEnvironmentVariable(EnvPrefix + key.ToUpperInvariant());
+            return string.IsNullOrEmpty(fromEnv) ? ConfigurationManager.AppSettings[key] : fromEnv;
+        }
+
         static string Setting(string key)
         {
-            return ConfigurationManager.AppSettings[key] ?? throw new ConfigurationErrorsException("Missing setting '" + key + "' in the .config file.");
+            return RawSetting(key) ?? throw new ConfigurationErrorsException("Missing setting '" + key + "' in the .config file (or environment variable " + EnvPrefix + key.ToUpperInvariant() + ").");
         }
 
         static bool Flag(string key)
         {
-            return string.Equals(ConfigurationManager.AppSettings[key]?.Trim(), "Y", StringComparison.OrdinalIgnoreCase);
+            return string.Equals(RawSetting(key)?.Trim(), "Y", StringComparison.OrdinalIgnoreCase);
         }
 
         static bool IsNo(string key)
         {
-            return string.Equals(ConfigurationManager.AppSettings[key]?.Trim(), "N", StringComparison.OrdinalIgnoreCase);
+            return string.Equals(RawSetting(key)?.Trim(), "N", StringComparison.OrdinalIgnoreCase);
         }
 
         static IEnumerable<string> SplitList(string value)

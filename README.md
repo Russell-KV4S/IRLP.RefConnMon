@@ -61,4 +61,8 @@ For Telegram setup see the wiki article: https://github.com/Russell-KV4S/IRLP.Re
 
 For Gmail, use an App Password (https://myaccount.google.com/apppasswords) for `SMTPPassword`, not your account password. Port 587 (STARTTLS) and 465 (SSL) both work.
 
+To keep your password and bot token out of the config file, set them as environment variables instead. Any setting can be supplied as `IRLP_REFCONNMON_` plus the key in capitals, and the environment variable wins over the config file:
+- Windows (Command Prompt, saved for your user): `setx IRLP_REFCONNMON_SMTPPASSWORD "your-app-password"` and `setx IRLP_REFCONNMON_BOTTOKEN "123456:ABC..."`
+- Linux/macOS cron: put them on the cron line, e.g. `*/2 * * * * cd /path/to/IRLP.RefConnMon && IRLP_REFCONNMON_SMTPPASSWORD='...' ./IRLP.RefConnMon`, or in a file only you can read that the job sources first.
+
 Errors will be logged to an ErrorLog.txt 
