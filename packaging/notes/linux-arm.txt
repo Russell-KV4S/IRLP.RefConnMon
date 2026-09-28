@@ -1,0 +1,18 @@
+Do not copy IRLP.RefConnMon.dll.config over your settings if you already set one up.
+
+This build is for 32-bit ARM Linux (armv7 / armhf, e.g. Raspberry Pi 2/3/4/5 running a 32-bit OS).
+For a 64-bit OS use IRLP.RefConnMon-linux-arm64.zip (check with: uname -m  ->  armv7l = this zip, aarch64 = arm64 zip).
+Not supported on Raspberry Pi 1 / Zero (original) - .NET needs armv7.
+It needs the .NET 10 Runtime: https://learn.microsoft.com/dotnet/core/install/linux
+Microsoft has no apt package for 32-bit ARM, so install it with the dotnet-install script from that page.
+The script installs to ~/.dotnet; add  DOTNET_ROOT=$HOME/.dotnet  to your environment (and to the cron line)
+so ./IRLP.RefConnMon can find it, e.g.:  */2 * * * * cd /path/to/IRLP.RefConnMon && DOTNET_ROOT=$HOME/.dotnet ./IRLP.RefConnMon
+
+Run it with:  ./IRLP.RefConnMon   (or: dotnet IRLP.RefConnMon.dll)
+If ./IRLP.RefConnMon is not executable after unzipping:  chmod +x IRLP.RefConnMon
+
+Set Unattended to Y in IRLP.RefConnMon.dll.config and schedule it with cron, e.g. every 2 minutes:
+*/2 * * * * cd /path/to/IRLP.RefConnMon && ./IRLP.RefConnMon
+
+Upgrading from 1.x: the settings file is now named IRLP.RefConnMon.dll.config instead of IRLP.RefConnMon.exe.config.
+Copy your values into the new file (the keys are unchanged). Your existing reflector .txt files still work.
