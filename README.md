@@ -9,6 +9,8 @@ Linux ARM 32-bit (e.g. Raspberry Pi 2/3/4/5 on a 32-bit OS; run `uname -m`: `arm
 
 Linux x64 (64-bit x86 PCs and servers): https://github.com/Russell-KV4S/IRLP.RefConnMon/releases/download/v1.3/IRLP.RefConnMon-linux-x64.zip
 
+Linux musl x64 (Alpine Linux and Alpine-based Docker images; if `ldd --version` mentions musl, use this one): https://github.com/Russell-KV4S/IRLP.RefConnMon/releases/download/v1.3/IRLP.RefConnMon-linux-musl-x64.zip
+
 macOS ARM64 (Apple Silicon M1 and later): https://github.com/Russell-KV4S/IRLP.RefConnMon/releases/download/v1.3/IRLP.RefConnMon-osx-arm64.zip (after unzipping, run `xattr -dr com.apple.quarantine .` in the folder so macOS allows it to run)
 
 macOS x64 (Intel Macs): https://github.com/Russell-KV4S/IRLP.RefConnMon/releases/download/v1.3/IRLP.RefConnMon-osx-x64.zip (same `xattr` step as above after unzipping)
