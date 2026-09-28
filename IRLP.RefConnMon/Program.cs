@@ -1,328 +1,282 @@
-﻿using System;
-using System.Collections.Generic;
 using System.Configuration;
-using System.IO;
-using System.Linq;
 using System.Net;
-using System.Net.Mail;
-using System.Threading;
+using System.Text.RegularExpressions;
+using MailKit.Net.Smtp;
+using MailKit.Security;
+using MimeKit;
 using Telegram.Bot;
 
 namespace KV4S.AmateurRadio.IRLP.RefConnMon
 {
     class Program
     {
-        public static string URL = "http://status.irlp.net/index.php?PSTART=9";
+        const string URL = "http://status.irlp.net/index.php?PSTART=9";
+        const string StatusTitle = "IRLP Reflector Connection Monitor";
 
-        //load from App.config
+        //Telegram allows roughly one message per second to the same chat.
+        static readonly TimeSpan TelegramDelay = TimeSpan.FromSeconds(1);
 
-        //telegram
-        public static TelegramBotClient bot = new TelegramBotClient(ConfigurationManager.AppSettings["BotToken"]);
-        public static string destinationID = ConfigurationManager.AppSettings["DestinationID"];
-        public static int intSleepTime = 2000;
+        //State and log files live next to the executable so Task Scheduler/cron runs don't depend on the working directory.
+        static readonly string BaseDir = AppContext.BaseDirectory;
+        static readonly string ErrorLogPath = Path.Combine(BaseDir, "ErrorLog.txt");
 
-        //email
-        public static MailAddress from = new MailAddress(ConfigurationManager.AppSettings["EmailFrom"]);
-        public static string toConfig = ConfigurationManager.AppSettings["EmailTo"];
-        public static string smtpHost = ConfigurationManager.AppSettings["SMTPHost"];
-        public static string smtpPort = ConfigurationManager.AppSettings["SMTPPort"];
-        public static string smtpUser = ConfigurationManager.AppSettings["SMTPUser"];
-        public static string smtpPswrd = ConfigurationManager.AppSettings["SMTPPassword"];
+        static readonly Regex HtmlTag = new Regex("<.*?>", RegexOptions.Compiled);
 
-        private static List<string> _reflectorList = null;
-        private static string ReflectorListString
+        static TelegramBotClient? _bot;
+
+        static async Task Main(string[] args)
         {
-            set
-            {
-                string[] reflectorArray = value.Split(',');
-                _reflectorList = new List<string>(reflectorArray.Length);
-                _reflectorList.AddRange(reflectorArray);
-            }
-        }
-
-        private static List<string> _emailAddressList = null;
-        private static string EmailAddressListString
-        {
-            set
-            {
-                string[] emailAddressArray = value.Split(',');
-                _emailAddressList = new List<string>(emailAddressArray.Length);
-                _emailAddressList.AddRange(emailAddressArray);
-            }
-        }
-
-        static void Main(string[] args)
-        {
+            Console.WriteLine("Welcome to the IRLP Reflector Connection Monitor Application by KV4S!");
+            Console.WriteLine(" ");
             try
             {
-                NodeCollection NodesOnDisk = new NodeCollection();
-                NodeCollection NodesOnWeb = new NodeCollection();
-
-                Console.WriteLine("Welcome to the IRLP Reflector Connection Monitor Application by KV4S!");
-                Console.WriteLine(" ");
                 Console.WriteLine("Beginning download from " + URL);
                 Console.WriteLine("Please Stand by.....");
                 Console.WriteLine(" ");
-                using (WebClient wc = new WebClient())
+
+                string irlpHTML;
+                using (var http = new HttpClient { Timeout = TimeSpan.FromSeconds(60) })
                 {
-                    ServicePointManager.Expect100Continue = true;
-                    ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
-                    var irlpHTML = wc.DownloadString(URL);
+                    irlpHTML = await http.GetStringAsync(URL);
+                }
 
-                    if (irlpHTML.Contains("9050") &&        //seeing if the html includes the largest reflector. sometimes the data isn't loaded when the html is loaded.
-                        irlpHTML.Contains("<hr><center>"))  //when writing html file out to disk saw bad symbols or blank spaces on some downloads and represents a bad download.
+                if (!irlpHTML.Contains("9050") ||        //seeing if the html includes the largest reflector. sometimes the data isn't loaded when the html is loaded.
+                    !irlpHTML.Contains("<hr><center>"))  //when writing html file out to disk saw bad symbols or blank spaces on some downloads and represents a bad download.
+                {
+                    Console.WriteLine("Downloaded page looks incomplete; skipping this run so no false disconnects are reported.");
+                    return;
+                }
+
+                List<Node> allNodes = ParseNodes(irlpHTML);
+
+                foreach (string reflector in SplitList(Setting("Reflectors").ToUpper()))
+                {
+                    Console.WriteLine("Looking for connections to " + reflector);
+                    List<Node> nodesOnWeb = allNodes
+                        .Where(n => n.ConnectedReflector == reflector)
+                        .GroupBy(n => n.Number)
+                        .Select(g => g.First())
+                        .ToList();
+                    foreach (var node in nodesOnWeb)
                     {
-                        ReflectorListString = ConfigurationManager.AppSettings["Reflectors"].ToUpper();
-                        foreach (string reflector in _reflectorList)
+                        Console.WriteLine("     " + node.Callsign + " node number " + node.Number + " is connected to reflector " + node.ConnectedReflector + ".");
+                    }
+
+                    string statePath = Path.Combine(BaseDir, reflector + ".txt");
+                    if (File.Exists(statePath))
+                    {
+                        List<Node> nodesOnDisk = LoadNodes(statePath);
+                        var diskNumbers = nodesOnDisk.Select(n => n.Number).ToHashSet();
+                        var webNumbers = nodesOnWeb.Select(n => n.Number).ToHashSet();
+
+                        var connected = nodesOnWeb.Where(n => !diskNumbers.Contains(n.Number)).ToList();
+                        var disconnected = nodesOnDisk.Where(n => !webNumbers.Contains(n.Number)).ToList();
+
+                        foreach (var node in connected)
                         {
-                            Console.WriteLine("Looking for connections to " + reflector);
-                            string[] strBeginSplit = new string[] { "<tr><td>" };
-                            string[] strRowSplit = irlpHTML.Split(strBeginSplit, StringSplitOptions.RemoveEmptyEntries);
-
-                            int i = 1;
-                            foreach (var item in strRowSplit)
-                            {
-                                if (i > 3)
-                                {
-                                    string[] strItemSplit = new string[] { "</td><td>", "</td></tr>" };
-                                    string[] strFieldSplit = item.Split(strItemSplit, StringSplitOptions.RemoveEmptyEntries);
-
-                                    if (strFieldSplit[strFieldSplit.Length - 1].ToString().Trim() == reflector)
-                                    {
-                                        Node node = new Node();
-                                        node.Callsign = strFieldSplit[1].ToString().Trim();
-                                        node.Number = strFieldSplit[0].Substring(strFieldSplit[0].IndexOf(">") + 1,
-                                                      strFieldSplit[0].Length - strFieldSplit[0].LastIndexOf("<"));
-                                        node.ConnectedReflector = strFieldSplit[strFieldSplit.Length - 1].ToString().Trim();
-                                        NodesOnWeb.Add(node);
-                                        Console.WriteLine("     " + node.Callsign + " node number " + node.Number + " is connected to reflector " + node.ConnectedReflector + ".");
-                                    }
-                                }
-                                i++;
-                            }
-
-                            bool SomethingChanged = false;
-                            if (File.Exists(reflector + ".txt"))
-                            {
-                                //Load Node object from disk.
-                                using (StreamReader sr = File.OpenText(reflector + ".txt"))
-                                {
-                                    String s = "";
-                                    while ((s = sr.ReadLine()) != null)
-                                    {
-                                        string[] strItemSplit = new string[] { "," };
-                                        string[] strFieldSplit = s.Split(strItemSplit, StringSplitOptions.RemoveEmptyEntries);
-                                        Node node = new Node();
-                                        node.Number = strFieldSplit[0];
-                                        node.Callsign = strFieldSplit[1];
-                                        node.ConnectedReflector = strFieldSplit[2];
-                                        NodesOnDisk.Add(node);
-                                    }
-                                }
-
-                                //Compare web to disk and add missing as these represent new connections
-                                foreach (var webNode in NodesOnWeb)
-                                {
-                                    bool found = false;
-                                    foreach (var diskNode in NodesOnDisk)
-                                    {
-                                        if (webNode.Number == diskNode.Number)
-                                        {
-                                            found = true;
-                                        }
-                                    }
-                                    if (!found)
-                                    {
-                                        SomethingChanged = true;
-                                        NodesOnDisk.Add(webNode);
-                                        if (ConfigurationManager.AppSettings["StatusEmails"] == "Y")
-                                        {
-                                            Email(webNode.Callsign + " (" + webNode.Number + ") has connected to " + webNode.ConnectedReflector + ".");
-                                        }
-                                        if (ConfigurationManager.AppSettings["TelegramStatus"] == "Y")
-                                        {
-                                            bot.SendTextMessageAsync(destinationID, "IRLP Reflector Connnection Monitor - " +
-                                                webNode.Callsign + " (" + webNode.Number + ") has connected to " + webNode.ConnectedReflector + ".");
-                                            Thread.Sleep(intSleepTime);
-                                        }
-                                    }
-                                }
-
-                                //compare disk to web and remove missing as these repesent disconnections
-                                foreach (var diskNode in NodesOnDisk.ToList())
-                                {
-                                    bool found = false;
-                                    foreach (var webNode in NodesOnWeb)
-                                    {
-                                        if (diskNode.Number == webNode.Number)
-                                        {
-                                            found = true;
-                                        }
-                                    }
-                                    if (!found)
-                                    {
-                                        SomethingChanged = true;
-                                        NodesOnDisk.Remove(diskNode);
-                                        if (ConfigurationManager.AppSettings["StatusEmails"] == "Y")
-                                        {
-                                            Email(diskNode.Callsign + " (" + diskNode.Number + ") has disconnected from " + diskNode.ConnectedReflector + ".");
-                                        }
-                                        if (ConfigurationManager.AppSettings["TelegramStatus"] == "Y")
-                                        {
-                                            bot.SendTextMessageAsync(destinationID, "IRLP Reflector Connnection Monitor - " +
-                                                diskNode.Callsign + " (" + diskNode.Number + ") has disconnected from " + diskNode.ConnectedReflector + ".");
-                                            Thread.Sleep(intSleepTime);
-                                        }
-                                    }
-                                }
-
-                                //delete and rewrite the new nodes on disk list.
-                                if (SomethingChanged)
-                                {
-                                    File.Delete(reflector + ".txt");
-                                    FileStream fs = null;
-                                    fs = new FileStream(reflector + ".txt", FileMode.Append);
-                                    StreamWriter log = new StreamWriter(fs);
-                                    foreach (var node in NodesOnDisk)
-                                    {
-                                        log.WriteLine(node.Number + "," + node.Callsign + "," + node.ConnectedReflector);
-                                    }
-                                    log.Close();
-                                    fs.Close();
-
-                                    //debugging/testing only - adding code to write html to file to try to figure out if malformed html is reporting as a disconnect false positive.
-                                    //FileStream fs1 = null;
-                                    //fs1 = new FileStream("irlpHTML_" + DateTime.Now.ToString("HH_mm_ss") + ".txt", FileMode.Append);
-                                    //StreamWriter html = new StreamWriter(fs1);
-                                    //html.WriteLine(irlpHTML.ToString());
-                                    //html.Close();
-                                    //fs1.Close();
-                                }
-                            }
-                            else
-                            {
-                                FileStream fs = null;
-                                fs = new FileStream(reflector + ".txt", FileMode.Append);
-                                StreamWriter log = new StreamWriter(fs);
-                                foreach (var node in NodesOnWeb)
-                                {
-                                    log.WriteLine(node.Number + "," + node.Callsign + "," + node.ConnectedReflector);
-                                }
-                                log.Close();
-                                fs.Close();
-                            }
-                            NodesOnWeb.Clear();
-                            NodesOnDisk.Clear();
+                            await NotifyStatus(node.Callsign + " (" + node.Number + ") has connected to " + node.ConnectedReflector + ".");
                         }
+                        foreach (var node in disconnected)
+                        {
+                            await NotifyStatus(node.Callsign + " (" + node.Number + ") has disconnected from " + node.ConnectedReflector + ".");
+                        }
+
+                        if (connected.Count > 0 || disconnected.Count > 0)
+                        {
+                            SaveNodes(statePath, nodesOnWeb);
+                        }
+                    }
+                    else
+                    {
+                        SaveNodes(statePath, nodesOnWeb);
                     }
                 }
                 Console.WriteLine("Reflector Monitoring Complete!");
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Program encountered and error:");
+                Console.WriteLine("Program encountered an error:");
                 Console.WriteLine(ex.Message);
-                LogError(ex.Message, ex.Source);
-                if (ConfigurationManager.AppSettings["EmailError"] == "Y")
+                LogError(ex);
+                if (Flag("EmailError"))
                 {
-                    EmailError(ex.Message, ex.Source);
+                    await SendEmail("IRLP.RefConnMon Error", "Message: " + ex.Message + " Source: " + ex.Source);
                 }
-                if (ConfigurationManager.AppSettings["TelegramError"] == "Y")
+                if (Flag("TelegramError"))
                 {
-                    bot.SendTextMessageAsync(destinationID, "IRLP.RefConnMon Error - Message: " + ex.Message + " Source: " + ex.Source);
-                    Thread.Sleep(intSleepTime);
+                    await SendTelegram("IRLP.RefConnMon Error - Message: " + ex.Message + " Source: " + ex.Source);
                 }
             }
             finally
             {
-                if (ConfigurationManager.AppSettings["Unattended"] == "N")
+                if (IsNo("Unattended") && !Console.IsInputRedirected)
                 {
                     Console.WriteLine("Press any key on your keyboard to quit...");
-                    Console.ReadKey();
+                    try
+                    {
+                        Console.ReadKey();
+                    }
+                    catch (InvalidOperationException)
+                    {
+                        //no interactive console available (e.g. running as a scheduled task).
+                    }
                 }
             }
         }
 
-        private static void EmailError(string Message, string Source)
+        //Each table row starts with "<tr><td>"; the first three chunks are the page header and table header rows.
+        //Cells are: node number, callsign, ..., connected reflector (last cell).
+        static List<Node> ParseNodes(string html)
         {
-            try
+            var nodes = new List<Node>();
+            string[] rows = html.Split(new[] { "<tr><td>" }, StringSplitOptions.RemoveEmptyEntries);
+            foreach (string row in rows.Skip(3))
             {
-                MailMessage mail = new MailMessage();
-                mail.Subject = "IRLP.RefConnMon Error";
-                mail.From = from;
-
-                EmailAddressListString = toConfig;
-                foreach (string emailAddress in _emailAddressList)
+                int rowEnd = row.IndexOf("</td></tr>", StringComparison.Ordinal);
+                string cellsHtml = rowEnd >= 0 ? row.Substring(0, rowEnd) : row;
+                string[] cells = cellsHtml.Split(new[] { "</td><td>" }, StringSplitOptions.RemoveEmptyEntries);
+                if (cells.Length < 3)
                 {
-                    mail.To.Add(emailAddress);
+                    continue;
                 }
 
-                mail.Body = "Message: " + Message + " Source: " + Source;
-
-                SmtpClient smtp = new SmtpClient();
-                smtp.Host = smtpHost;
-                smtp.Port = Convert.ToInt32(smtpPort);
-
-                smtp.Credentials = new NetworkCredential(smtpUser, smtpPswrd);
-                smtp.EnableSsl = true;
-                smtp.Send(mail);
+                var node = new Node
+                {
+                    Number = CellText(cells[0]),
+                    Callsign = CellText(cells[1]),
+                    ConnectedReflector = CellText(cells[cells.Length - 1]),
+                };
+                if (node.Number.Length > 0)
+                {
+                    nodes.Add(node);
+                }
             }
-            catch (Exception ex)
+            return nodes;
+        }
+
+        static string CellText(string cellHtml)
+        {
+            return WebUtility.HtmlDecode(HtmlTag.Replace(cellHtml, "")).Trim();
+        }
+
+        //State file format: one "Number,Callsign,Reflector" line per connected node.
+        static List<Node> LoadNodes(string path)
+        {
+            var nodes = new List<Node>();
+            foreach (string line in File.ReadLines(path))
             {
-                Console.WriteLine("Program encountered and an error sending email:");
-                Console.WriteLine(ex.Message);
-                LogError(ex.Message, ex.Source);
+                string[] fields = line.Split(',');
+                if (fields.Length < 3 || fields[0].Trim().Length == 0)
+                {
+                    continue;
+                }
+                nodes.Add(new Node
+                {
+                    Number = fields[0].Trim(),
+                    Callsign = fields[1].Trim(),
+                    ConnectedReflector = fields[2].Trim(),
+                });
+            }
+            return nodes;
+        }
+
+        //Write to a temp file and swap it in so a failed write can't wipe out the saved state.
+        static void SaveNodes(string path, IEnumerable<Node> nodes)
+        {
+            string tempPath = path + ".tmp";
+            File.WriteAllLines(tempPath, nodes.Select(n => n.Number + "," + n.Callsign + "," + n.ConnectedReflector));
+            File.Move(tempPath, path, overwrite: true);
+        }
+
+        static async Task NotifyStatus(string message)
+        {
+            if (Flag("StatusEmails"))
+            {
+                await SendEmail(StatusTitle, message);
+            }
+            if (Flag("TelegramStatus"))
+            {
+                await SendTelegram(StatusTitle + " - " + message);
+                await Task.Delay(TelegramDelay);
             }
         }
 
-        private static void Email(string body)
+        static async Task SendEmail(string subject, string body)
         {
             try
             {
-                MailMessage mail = new MailMessage();
-                mail.Subject = "IRLP Reflector Connnection Monitor";
-                mail.From = from;
-
-                EmailAddressListString = toConfig;
-                foreach (string emailAddress in _emailAddressList)
+                var mail = new MimeMessage();
+                mail.Subject = subject;
+                foreach (string address in SplitList(Setting("EmailFrom")))
                 {
-                    mail.To.Add(emailAddress);
+                    mail.From.Add(MailboxAddress.Parse(address));
                 }
+                foreach (string address in SplitList(Setting("EmailTo")))
+                {
+                    mail.To.Add(MailboxAddress.Parse(address));
+                }
+                mail.Body = new TextPart("plain") { Text = body };
 
-                mail.Body = body;
-
-                SmtpClient smtp = new SmtpClient();
-                smtp.Host = smtpHost;
-                smtp.Port = Convert.ToInt32(smtpPort);
-
-                smtp.Credentials = new NetworkCredential(smtpUser, smtpPswrd);
-                smtp.EnableSsl = true;
-                smtp.Send(mail);
+                using var smtp = new SmtpClient();
+                await smtp.ConnectAsync(Setting("SMTPHost"), int.Parse(Setting("SMTPPort")), SecureSocketOptions.Auto);
+                await smtp.AuthenticateAsync(Setting("SMTPUser"), Setting("SMTPPassword"));
+                await smtp.SendAsync(mail);
+                await smtp.DisconnectAsync(true);
             }
             catch (Exception ex)
             {
                 Console.WriteLine("Error sending email:");
                 Console.WriteLine(ex.Message);
-                LogError(ex.Message, ex.Source);
+                LogError(ex);
             }
         }
 
-        private static void LogError(string Message, string source)
+        static async Task SendTelegram(string message)
         {
             try
             {
-                FileStream fs = null;
-                fs = new FileStream("ErrorLog.txt", FileMode.Append);
-                StreamWriter log = new StreamWriter(fs);
-                log.WriteLine(DateTime.Now + " Error: " + Message + " Source: " + source);
-                log.Close();
-                fs.Close();
+                _bot ??= new TelegramBotClient(Setting("BotToken"));
+                await _bot.SendMessage(Setting("DestinationID"), message);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error sending Telegram message:");
+                Console.WriteLine(ex.Message);
+                LogError(ex);
+            }
+        }
+
+        static void LogError(Exception ex)
+        {
+            try
+            {
+                File.AppendAllText(ErrorLogPath, DateTime.Now + " Error: " + ex + Environment.NewLine);
             }
             catch (Exception)
             {
                 Console.WriteLine("Error logging previous error.");
                 Console.WriteLine("Make sure the Error log is not open.");
             }
+        }
+
+        static string Setting(string key)
+        {
+            return ConfigurationManager.AppSettings[key] ?? throw new ConfigurationErrorsException("Missing setting '" + key + "' in the .config file.");
+        }
+
+        static bool Flag(string key)
+        {
+            return string.Equals(ConfigurationManager.AppSettings[key]?.Trim(), "Y", StringComparison.OrdinalIgnoreCase);
+        }
+
+        static bool IsNo(string key)
+        {
+            return string.Equals(ConfigurationManager.AppSettings[key]?.Trim(), "N", StringComparison.OrdinalIgnoreCase);
+        }
+
+        static IEnumerable<string> SplitList(string value)
+        {
+            return value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
         }
     }
 }

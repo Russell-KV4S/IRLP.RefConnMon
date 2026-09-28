@@ -1,7 +1,9 @@
 # Current Version 1.2
 https://github.com/Russell-KV4S/IRLP.RefConnMon/releases/download/v1.2/IRLP.RefConnMon.zip
 
-Runs on .Net Framework 4.8 install here: https://dotnet.microsoft.com/en-us/download/dotnet-framework/net48
+Runs on .NET 10 (Windows, Linux, or macOS). Install the .NET 10 Runtime here: https://dotnet.microsoft.com/en-us/download/dotnet/10.0
+
+**Upgrading from 1.x (.NET Framework 4.8):** the settings file is now named `IRLP.RefConnMon.dll.config` instead of `IRLP.RefConnMon.exe.config`. Copy your values into the new file (the keys are unchanged). Your existing reflector `.txt` files and `ErrorLog.txt` are compatible. They are now always read from and written to the program's folder, not the current working directory.
 
 # IRLP.RefConnMon
 IRLP.RefConnMon gives you ability to get Email and/or Telegram notifications about station connections to your favorite IRLP reflectors.
@@ -9,16 +11,15 @@ The program reads data from this site: http://status.irlp.net/index.php?PSTART=9
 
 Contact me if you have feature request or use Git and create your enhancements and merge them back in.
 
-I recommend using Windows Task Scheduler to kick the program off on about a 1-5 minute interval.
+I recommend using Windows Task Scheduler (or cron on Linux) to kick the program off on about a 1-5 minute interval. Set `Unattended` to `Y` when running it on a schedule.
 
-Once you download, edit the .config file that's along side the executable as needed (you won't need to copy the config on future releases unless there is a structure change). 
+To build from source: `dotnet publish IRLP.RefConnMon -c Release`
+
+Once you download, edit the `IRLP.RefConnMon.dll.config` file that's along side the executable as needed (you won't need to copy the config on future releases unless there is a structure change). 
 There are comments in the file that tells you how to format the entries. Here is the example file:
 ```
 <?xml version="1.0" encoding="utf-8" ?>
 <configuration>
-    <startup> 
-        <supportedRuntime version="v4.0" sku=".NETFramework,Version=v4.5.2" />
-    </startup>
     <appSettings>
         <!--use commas with no spaces to add more-->
         <add key="Reflectors" value="9109,0091"/>
@@ -47,5 +48,7 @@ There are comments in the file that tells you how to format the entries. Here is
 
 ```
 For Telegram setup see the wiki article: https://github.com/Russell-KV4S/IRLP.RefConnMon/wiki/Telegram-Setup
+
+For Gmail, use an App Password (https://myaccount.google.com/apppasswords) for `SMTPPassword`, not your account password. Port 587 (STARTTLS) and 465 (SSL) both work.
 
 Errors will be logged to an ErrorLog.txt 
