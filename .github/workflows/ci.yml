@@ -1,0 +1,46 @@
+name: CI
+
+# Builds every pull request (and every push to master) so a broken build or broken release
+# packaging shows up before merge instead of when a release tag is pushed.
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Build
+        run: dotnet build IRLP.RefConnMon.sln -c Release -warnaserror
+
+      - name: Check for vulnerable packages
+        run: |
+          dotnet list IRLP.RefConnMon package --vulnerable --include-transitive | tee vulnerable.txt
+          if grep -q "has the following vulnerable packages" vulnerable.txt; then
+            echo "::error::Vulnerable NuGet packages found (see above)."
+            exit 1
+          fi
+
+      - name: Build release zips
+        run: bash packaging/build-release.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-zips
+          path: artifacts/*.zip
+          retention-days: 7
