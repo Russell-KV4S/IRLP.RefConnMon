@@ -13,7 +13,7 @@ OUT="artifacts"
 NOTE="Do Not copy the config file if you already set one up.txt"
 
 # Runtime identifiers to build. win-x64 keeps the historic IRLP.RefConnMon.zip name so existing links keep working.
-RIDS=(win-x64 win-arm64 linux-x64 linux-musl-x64 linux-arm64 linux-arm osx-x64 osx-arm64)
+RIDS=(win-x64 win-arm64 linux-x64 linux-musl-x64 linux-arm64 linux-musl-arm64 linux-arm osx-x64 osx-arm64)
 
 rm -rf "$OUT"
 mkdir -p "$OUT"
