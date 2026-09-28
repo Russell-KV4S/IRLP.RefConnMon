@@ -9,6 +9,8 @@ Linux x64 (64-bit x86 PCs and servers): https://github.com/Russell-KV4S/IRLP.Ref
 
 macOS ARM64 (Apple Silicon M1 and later): https://github.com/Russell-KV4S/IRLP.RefConnMon/releases/download/v1.3/IRLP.RefConnMon-osx-arm64.zip (after unzipping, run `xattr -dr com.apple.quarantine .` in the folder so macOS allows it to run)
 
+macOS x64 (Intel Macs): https://github.com/Russell-KV4S/IRLP.RefConnMon/releases/download/v1.3/IRLP.RefConnMon-osx-x64.zip (same `xattr` step as above after unzipping)
+
 Runs on .NET 10 (Windows, Linux, or macOS). Install the .NET 10 Runtime here: https://dotnet.microsoft.com/en-us/download/dotnet/10.0
 
 **Upgrading from 1.x (.NET Framework 4.8):** the settings file is now named `IRLP.RefConnMon.dll.config` instead of `IRLP.RefConnMon.exe.config`. Copy your values into the new file (the keys are unchanged). Your existing reflector `.txt` files and `ErrorLog.txt` are compatible. They are now always read from and written to the program's folder, not the current working directory.
