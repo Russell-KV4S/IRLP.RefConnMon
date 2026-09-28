@@ -5,6 +5,8 @@ Windows ARM64 (e.g. Snapdragon / Surface Pro X): https://github.com/Russell-KV4S
 
 Linux ARM64 (e.g. Raspberry Pi 3/4/5 on a 64-bit OS): https://github.com/Russell-KV4S/IRLP.RefConnMon/releases/download/v1.3/IRLP.RefConnMon-linux-arm64.zip
 
+Linux ARM 32-bit (e.g. Raspberry Pi 2/3/4/5 on a 32-bit OS; run `uname -m`: `armv7l` = this one, `aarch64` = ARM64): https://github.com/Russell-KV4S/IRLP.RefConnMon/releases/download/v1.3/IRLP.RefConnMon-linux-arm.zip
+
 Linux x64 (64-bit x86 PCs and servers): https://github.com/Russell-KV4S/IRLP.RefConnMon/releases/download/v1.3/IRLP.RefConnMon-linux-x64.zip
 
 macOS ARM64 (Apple Silicon M1 and later): https://github.com/Russell-KV4S/IRLP.RefConnMon/releases/download/v1.3/IRLP.RefConnMon-osx-arm64.zip (after unzipping, run `xattr -dr com.apple.quarantine .` in the folder so macOS allows it to run)
