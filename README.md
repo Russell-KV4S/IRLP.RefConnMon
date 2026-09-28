@@ -1,5 +1,7 @@
 # Current Version 1.3
-https://github.com/Russell-KV4S/IRLP.RefConnMon/releases/download/v1.3/IRLP.RefConnMon.zip
+Windows (x64): https://github.com/Russell-KV4S/IRLP.RefConnMon/releases/download/v1.3/IRLP.RefConnMon.zip
+
+Linux ARM64 (e.g. Raspberry Pi 3/4/5 on a 64-bit OS): https://github.com/Russell-KV4S/IRLP.RefConnMon/releases/download/v1.3/IRLP.RefConnMon-linux-arm64.zip
 
 Runs on .NET 10 (Windows, Linux, or macOS). Install the .NET 10 Runtime here: https://dotnet.microsoft.com/en-us/download/dotnet/10.0
 
