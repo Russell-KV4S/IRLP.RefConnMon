@@ -1,6 +1,8 @@
 # Current Version 1.3
 Windows (x64): https://github.com/Russell-KV4S/IRLP.RefConnMon/releases/download/v1.3/IRLP.RefConnMon.zip
 
+Windows ARM64 (e.g. Snapdragon / Surface Pro X): https://github.com/Russell-KV4S/IRLP.RefConnMon/releases/download/v1.3/IRLP.RefConnMon-win-arm64.zip
+
 Linux ARM64 (e.g. Raspberry Pi 3/4/5 on a 64-bit OS): https://github.com/Russell-KV4S/IRLP.RefConnMon/releases/download/v1.3/IRLP.RefConnMon-linux-arm64.zip
 
 Linux x64 (64-bit x86 PCs and servers): https://github.com/Russell-KV4S/IRLP.RefConnMon/releases/download/v1.3/IRLP.RefConnMon-linux-x64.zip
